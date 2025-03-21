@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe - Hard AI + 2 Player</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #74ebd5, #ACB6E5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .mode-select {
+            margin-bottom: 20px;
+        }
+        .mode-select button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #4a90e2;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        .mode-select button:hover {
+            background-color: #357ABD;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            background: #fff;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .cell:hover {
+            background: #f0f0f0;
+        }
+        .restart {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            border: none;
+            background: #ff4d4d;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .restart:hover {
+            background: #d93636;
+        }
+        .status {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #222;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tic Tac Toe</h1>
+    <div class="mode-select">
+        <button onclick="setMode('1player')">1 Player (Hard)</button>
+        <button onclick="setMode('2player')">2 Player</button>
+    </div>
+    <div class="status" id="status">Select a mode to start!</div>
+    <div class="board" id="board">
+        <div class="cell" onclick="cellClick(0)"></div>
+        <div class="cell" onclick="cellClick(1)"></div>
+        <div class="cell" onclick="cellClick(2)"></div>
+        <div class="cell" onclick="cellClick(3)"></div>
+        <div class="cell" onclick="cellClick(4)"></div>
+        <div class="cell" onclick="cellClick(5)"></div>
+        <div class="cell" onclick="cellClick(6)"></div>
+        <div class="cell" onclick="cellClick(7)"></div>
+        <div class="cell" onclick="cellClick(8)"></div>
+    </div>
+    <button class="restart" onclick="restartGame()">Restart Game</button>
+
+    <script>
+        let board = ["", "", "", "", "", "", "", "", ""];
+        let currentPlayer = "X";
+        let gameActive = false;
+        let mode = ""; // '1player' or '2player'
+
+        function setMode(selectedMode) {
+            mode = selectedMode;
+            restartGame();
+            document.getElementById('status').textContent = `Game started! ${mode === '1player' ? 'You vs Computer (Hard)' : 'Player X\'s turn'}`;
+            gameActive = true;
+        }
+
+        function cellClick(index) {
+            if (!gameActive || board[index] !== "" || (mode === '1player' && currentPlayer === 'O')) return;
+            makeMove(index, currentPlayer);
+            if (mode === "1player" && gameActive && currentPlayer === "O") {
+                setTimeout(computerMove, 300);
+            }
+        }
+
+        function makeMove(index, player) {
+            if (board[index] === "") {
+                board[index] = player;
+                document.querySelectorAll('.cell')[index].textContent = player;
+                checkResult();
+                currentPlayer = currentPlayer === "X" ? "O" : "X";
+                if (gameActive) {
+                    document.getElementById('status').textContent = mode === '2player'
+                        ? `Player ${currentPlayer}'s turn`
+                        : currentPlayer === 'X' ? 'Your turn' : 'Computer\'s turn';
+                }
+            }
+        }
+
+        function computerMove() {
+            let bestMove = findBestMove();
+            makeMove(bestMove, "O");
+        }
+
+        function findBestMove() {
+            let bestScore = -Infinity;
+            let move;
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === "") {
+                    board[i] = "O";
+                    let score = minimax(board, 0, false);
+                    board[i] = "";
+                    if (score > bestScore) {
+                        bestScore = score;
+                        move = i;
+                    }
+                }
+            }
+            return move;
+        }
+
+        function minimax(newBoard, depth, isMaximizing) {
+            const result = checkWinnerForMinimax();
+            if (result !== null) {
+                const scores = { X: -10, O: 10, tie: 0 };
+                return scores[result];
+            }
+
+            if (isMaximizing) {
+                let bestScore = -Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (newBoard[i] === "") {
+                        newBoard[i] = "O";
+                        let score = minimax(newBoard, depth + 1, false);
+                        newBoard[i] = "";
+                        bestScore = Math.max(score, bestScore);
+                    }
+                }
+                return bestScore;
+            } else {
+                let bestScore = Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (newBoard[i] === "") {
+                        newBoard[i] = "X";
+                        let score = minimax(newBoard, depth + 1, true);
+                        newBoard[i] = "";
+                        bestScore = Math.min(score, bestScore);
+                    }
+                }
+                return bestScore;
+            }
+        }
+
+        function checkWinnerForMinimax() {
+            const winConditions = [
+                [0,1,2],[3,4,5],[6,7,8],
+                [0,3,6],[1,4,7],[2,5,8],
+                [0,4,8],[2,4,6]
+            ];
+            for (let condition of winConditions) {
+                const [a, b, c] = condition;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    return board[a];
+                }
+            }
+            if (!board.includes("")) {
+                return "tie";
+            }
+            return null;
+        }
+
+        function checkResult() {
+            const winner = checkWinnerForMinimax();
+            if (winner !== null) {
+                if (winner === "tie") {
+                    document.getElementById('status').textContent = `It's a draw!`;
+                } else {
+                    document.getElementById('status').textContent = `Player ${winner} wins!`;
+                }
+                gameActive = false;
+            }
+        }
+
+        function restartGame() {
+            board = ["", "", "", "", "", "", "", "", ""];
+            currentPlayer = "X";
+            gameActive = mode !== "";
+            document.querySelectorAll('.cell').forEach(cell => cell.textContent = "");
+            document.getElementById('status').textContent = mode === '2player' 
+                ? "Player X's turn" 
+                : mode === '1player' ? "Your turn" : "Select a mode to start!";
+        }
+    </script>
+</body>
+</html>
